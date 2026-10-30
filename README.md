@@ -55,7 +55,10 @@ python3 -m apfea run                # full report to stdout
 python3 -m apfea run --out rpt.md   # full report to file
 python3 -m apfea tower              # control-tower report
 python3 -m apfea agent              # Foundry Process Agent report (v0.3)
-python3 -m unittest discover -s tests   # 23 tests, stdlib only
+python3 -m unittest discover -s tests   # 31 tests, stdlib only
+python3 -m apfea note add --stage wafer_sort --kind meeting_conclusion --author "W. Yan" --text "..."   # human note on a node (pending until approved)
+python3 -m apfea note approve --id 1 --approver "Approver"   # approve it
+python3 -m apfea note search --query SerDes   # find prior notes by block/problem
 ```
 
 Zero dependencies: Python 3 standard library only.
@@ -63,10 +66,10 @@ Zero dependencies: Python 3 standard library only.
 ## Layout
 
 ```
-apfea/            vtshift.py · doe.py · report.py · tower.py · cli.py
+apfea/            vtshift.py · doe.py · report.py · tower.py · cli.py · stages.py · agent.py · comments.py
 config/           shift_rules.json   (phenomenology as data)
-data/             demo_pdk.json · demo_chip.json · demo_flow.json (synthetic)
-tests/            test_apfea.py · test_tower.py
+data/             demo_pdk.json · demo_chip.json · demo_flow.json (synthetic) · stage_comments.json (human notes, created on first note)
+tests/            test_apfea.py · test_tower.py · test_agent.py · test_comments.py
 demo-report.md / demo-report-idm.md / tower-report.md   (generated demo output)
 ```
 
@@ -81,6 +84,33 @@ integrates companion dies (DRAM/HBM, photonics, analog, etc.) on an
 interposer via TSVs. The agent is planner level only: it observes,
 attributes, and recommends — it does not actuate a fab. Demo:
 `python -m apfea agent` (see `agent-report.md`).
+
+## Node comments with approval gate
+
+Every flow node (stage) accepts human-added comments and meeting
+conclusions, so later chip-problem analysis can find what people
+already decided, not just what the data recorded (`apfea/comments.py`):
+
+- Kinds: `comment`, `meeting_conclusion`, `decision`, `lesson_learned`.
+  Each note carries stage, author, text, tags, and an optional
+  problem reference (chip / lot / block, e.g. `SerDes 112G`), so a
+  later failure on the same block retrieves the earlier discussion.
+- Approval gate — nothing is added, changed, or deleted arbitrarily:
+  a new note is **pending** and is not surfaced by list/search until
+  an approver approves it; edits and deletions both require an
+  approver name, or they are refused and change nothing; an approved
+  edit returns the note to pending for re-approval, with the old text
+  kept in history; a deletion marks the note deleted but keeps the
+  record and audit trail.
+- Separation: notes do **not** change stage entries, gates, VT
+  calculations, or recorded measurements. They are evidence the
+  agent surfaces, never a silent override of a gate.
+
+```bash
+python3 -m apfea note add --stage fab --kind meeting_conclusion --author "W. Yan" --text "..." --problem "LVT"
+python3 -m apfea note conclusions --stage wafer_sort
+python3 -m apfea note search --query SerDes
+```
 
 ## Control tower (Part Two)
 
