@@ -1,0 +1,1 @@
+{"flavors":{"HVT":{"nmos_vt0":0.42,"pmos_vt0":-0.4,"sigma_pct":2.0},"LVT":{"nmos_vt0":0.28,"pmos_vt0":-0.26,"sigma_pct":2.3},"RVT":{"nmos_vt0":0.35,"pmos_vt0":-0.33,"sigma_pct":2.2},"ULVT":{"nmos_vt0":0.22,"pmos_vt0":-0.2,"sigma_pct":2.2}},"name":"DEMO-PDK (synthetic, 3nm-class values for demonstration only)"}
