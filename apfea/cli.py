@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from .agent import FoundryProcessAgent, render_agent_report
 from .doe import corner_table, evaluate_blocks
 from .report import render_report
 from .tower import realized_shifts, refit_rules, tower_status
@@ -16,6 +17,7 @@ DEFAULTS = {
     "chip": ROOT / "data" / "demo_chip.json",
     "rules": ROOT / "config" / "shift_rules.json",
     "flow": ROOT / "data" / "demo_flow.json",
+    "entries": ROOT / "data" / "demo_stage_entries.json",
 }
 
 
@@ -30,12 +32,12 @@ def _load(args):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="apfea", description="APFEA prototype v0.1")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("estimate", "run", "tower"):
+    for name in ("estimate", "run", "tower", "agent"):
         p = sub.add_parser(name)
         p.add_argument("--pdk", default=str(DEFAULTS["pdk"]))
         p.add_argument("--chip", default=str(DEFAULTS["chip"]))
         p.add_argument("--rules", default=str(DEFAULTS["rules"]))
-        if name in ("run", "tower"):
+        if name in ("run", "tower", "agent"):
             p.add_argument("--out", default=None, help="write report to this file")
             p.add_argument(
                 "--mode",
@@ -45,6 +47,8 @@ def main(argv=None) -> int:
             )
         if name == "tower":
             p.add_argument("--flow", default=str(DEFAULTS["flow"]))
+        if name == "agent":
+            p.add_argument("--entries", default=str(DEFAULTS["entries"]))
     args = ap.parse_args(argv)
     pdk, chip, rules = _load(args)
     if getattr(args, "mode", None):
@@ -57,6 +61,20 @@ def main(argv=None) -> int:
                 f"{r['flavor']:>5} {r['polarity']}  VT0 {r['vt0']:+.3f} V  "
                 f"shift {r['shift_pct']:+.1f}%  ->  VTs {r['vts']:+.4f} V"
             )
+        return 0
+
+    if args.cmd == "agent":
+        agent = FoundryProcessAgent(pdk, chip, rules)
+        for entry in load_json(args.entries)["entries"]:
+            problems = agent.observe(entry)
+            for problem in problems:
+                print(f"entry problem: {problem}")
+        text = render_agent_report(agent.run())
+        if args.out:
+            Path(args.out).write_text(text, encoding="utf-8")
+            print(f"agent report written to {args.out}")
+        else:
+            print(text)
         return 0
 
     if args.cmd == "tower":
