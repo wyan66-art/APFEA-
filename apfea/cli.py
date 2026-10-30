@@ -5,6 +5,9 @@ import argparse
 from pathlib import Path
 
 from .agent import FoundryProcessAgent, render_agent_report
+from .comments import (add_note, approve_note, delete_note, edit_note,
+                       meeting_conclusions, notes_for_stage, reject_note,
+                       render_note, search_notes)
 from .doe import corner_table, evaluate_blocks
 from .report import render_report
 from .tower import realized_shifts, refit_rules, tower_status
@@ -32,6 +35,24 @@ def _load(args):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="apfea", description="APFEA prototype v0.1")
     sub = ap.add_subparsers(dest="cmd", required=True)
+    # Human notes on a node: `python -m apfea note add|list|search ...`
+    # Handled before any PDK/chip load, because notes need no model data.
+    pn = sub.add_parser("note", help="add/list/search human notes on a node")
+    pn.add_argument("action", choices=("add", "list", "search", "conclusions",
+                                      "approve", "reject", "edit", "delete"))
+    pn.add_argument("--file", default=str(ROOT / "data" / "stage_comments.json"))
+    pn.add_argument("--stage", default=None)
+    pn.add_argument("--id", type=int, default=None)
+    pn.add_argument("--approver", default="")
+    pn.add_argument("--include-pending", action="store_true")
+    pn.add_argument("--kind", default=None,
+                    choices=(None, "comment", "meeting_conclusion",
+                             "decision", "lesson_learned"))
+    pn.add_argument("--author", default="")
+    pn.add_argument("--text", default="")
+    pn.add_argument("--tags", default="")
+    pn.add_argument("--problem", default="")
+    pn.add_argument("--query", default="")
     for name in ("estimate", "run", "tower", "agent"):
         p = sub.add_parser(name)
         p.add_argument("--pdk", default=str(DEFAULTS["pdk"]))
@@ -50,6 +71,39 @@ def main(argv=None) -> int:
         if name == "agent":
             p.add_argument("--entries", default=str(DEFAULTS["entries"]))
     args = ap.parse_args(argv)
+    if args.cmd == "note":
+        tags = [t.strip() for t in args.tags.split(",") if t.strip()]
+        if args.action == "add":
+            note = add_note(args.file, stage=args.stage, kind=args.kind or "comment",
+                            author=args.author, text=args.text, tags=tags,
+                            problem_ref=args.problem)
+            print(render_note(note))
+            print("Status: pending — needs approval before it is surfaced.")
+        elif args.action == "approve":
+            print(render_note(approve_note(args.file, args.id, args.approver)))
+        elif args.action == "reject":
+            print(render_note(reject_note(args.file, args.id, args.approver,
+                                          reason=args.text)))
+        elif args.action == "edit":
+            note = edit_note(args.file, args.id, args.text, args.approver)
+            print(render_note(note))
+            print("Status: pending again — edited note needs re-approval.")
+        elif args.action == "delete":
+            print(render_note(delete_note(args.file, args.id, args.approver)))
+        elif args.action == "list":
+            found = notes_for_stage(args.file, args.stage, kind=args.kind,
+                                    include_pending=args.include_pending)
+            print("\n\n".join(render_note(n) for n in found) or "(no notes)")
+        elif args.action == "conclusions":
+            found = meeting_conclusions(args.file, stage=args.stage,
+                                        include_pending=args.include_pending)
+            print("\n\n".join(render_note(n) for n in found) or "(no conclusions)")
+        else:  # search
+            found = search_notes(args.file, args.query, stage=args.stage,
+                                 kind=args.kind,
+                                 include_pending=args.include_pending)
+            print("\n\n".join(render_note(n) for n in found) or "(no matches)")
+        return 0
     pdk, chip, rules = _load(args)
     if getattr(args, "mode", None):
         chip = dict(chip, business_model=args.mode)
