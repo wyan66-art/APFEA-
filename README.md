@@ -54,7 +54,8 @@ python3 -m apfea estimate           # Step I table only
 python3 -m apfea run                # full report to stdout
 python3 -m apfea run --out rpt.md   # full report to file
 python3 -m apfea tower              # control-tower report
-python3 -m unittest discover -s tests   # 18 tests, stdlib only
+python3 -m apfea agent              # Foundry Process Agent report (v0.3)
+python3 -m unittest discover -s tests   # 23 tests, stdlib only
 ```
 
 Zero dependencies: Python 3 standard library only.
@@ -68,6 +69,18 @@ data/             demo_pdk.json · demo_chip.json · demo_flow.json (synthetic)
 tests/            test_apfea.py · test_tower.py
 demo-report.md / demo-report-idm.md / tower-report.md   (generated demo output)
 ```
+
+## Foundry Process Agent (v0.3)
+
+`apfea/stages.py` defines the 9 flow stages as entries, each with
+input / output / recorded / gate / feedback. `apfea/agent.py` runs
+the loop: observe an entry → reason (DOE, VT refit, yield health) →
+act (actions, gates, report) → learn (refit rules for the next
+tape-out). Main chip is a SoC ASIC; the 2.5D/3D packaging stage
+integrates companion dies (DRAM/HBM, photonics, analog, etc.) on an
+interposer via TSVs. The agent is planner level only: it observes,
+attributes, and recommends — it does not actuate a fab. Demo:
+`python -m apfea agent` (see `agent-report.md`).
 
 ## Control tower (Part Two)
 
