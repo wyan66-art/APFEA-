@@ -542,6 +542,7 @@ footer p{margin-top:10px;max-width:780px}
     <p>In one line: watch the whole flow, design for the silicon you will actually get, and catch the margin problem before tape-out — eliminate the mask-fix re-tape-out.</p>
     <p>APFEA is a defensive publication: free to all US semiconductor companies; its content may not be patented by any individual, company, or firm. All IP rights remain the author's.</p>
     <p>Contact: <a href="mailto:yan415822@gmail.com" style="color:#5eead4">yan415822@gmail.com</a> · Code: <a href="https://github.com/wyan66-art/APFEA-" target="_blank" rel="noopener" style="color:#5eead4">github.com/wyan66-art/APFEA-</a></p>
+    <p>Visitors: <span id="gc-count"></span></p>
     <p style="color:#9fb3ad;font-size:13px">Photographs: wafer close-up via Tokyo Electron's corporate pages; cleanroom via Hydrotank — used as illustrations of the process environment.</p>
   </div>
 </footer>
@@ -567,6 +568,21 @@ footer p{margin-top:10px;max-width:780px}
       window.location.href='mailto:yan415822@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(bodyText);
     });
   }
+})();
+</script>
+<script data-goatcounter="https://apfea.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+<script>
+(function(){
+  var tries=0;
+  var iv=setInterval(function(){
+    tries++;
+    if(window.goatcounter && typeof window.goatcounter.visit_count==='function'){
+      clearInterval(iv);
+      window.goatcounter.visit_count({append:'#gc-count'});
+    } else if(tries>=100){
+      clearInterval(iv);
+    }
+  },100);
 })();
 </script>
 </body>
